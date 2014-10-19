@@ -19,23 +19,6 @@ struct Buffer {
 	Uint32 length;
 };
 
-ostream &operator<<(ostream &o, const SDL_AudioSpec &spec) {
-	o << "freq" << ' ' <<  spec.freq << endl;
-	o << "format" <<  ' ' << spec.format << ' ' << AUDIO_S16LSB << endl;
-	o << "channels" <<  ' ' << static_cast<int>(spec.channels) << endl;
-	o << "samples" <<  ' ' << spec.samples << endl;
-	return o;
-}
-
-void print_devices() {
-	const int capture = 0;
-	for (unsigned i = 0; i < SDL_GetNumAudioDevices(capture); ++i) {
-		cout << "Device " << i << ": "
-		     << SDL_GetAudioDeviceName(i, capture) << endl;
-	}
-}
-
-
 int main(const int argc, char** argv) {
 
 	const string usage {"player file_name.wav"};
@@ -52,31 +35,27 @@ int main(const int argc, char** argv) {
 		return -1;
 	}
 
-	Buffer b;
-	SDL_AudioSpec wav_spec;
+	Buffer buffer;
+	SDL_AudioSpec spec;
 	
-	if (!SDL_LoadWAV(file_name.c_str(), &wav_spec, &b.position, &b.length)) {
-		SDL_FreeWAV(b.position);
+	if (!SDL_LoadWAV(file_name.c_str(), &spec,
+	                 &buffer.position, &buffer.length)) {
+		SDL_FreeWAV(buffer.position);
 		SDL_Quit();		
 	  return -1;
 	}
 
-	wav_spec.callback = audio_callback;
-	wav_spec.userdata = &b;
+	spec.callback = audio_callback;
+	spec.userdata = &buffer;
 
-	SDL_AudioSpec device_spec;
 	SDL_AudioDeviceID dev = SDL_OpenAudioDevice(
-			nullptr, 0, &wav_spec, &device_spec, SDL_AUDIO_ALLOW_ANY_CHANGE);
+			nullptr, 0, &spec, nullptr, SDL_AUDIO_ALLOW_ANY_CHANGE);
 
 	if (!dev) {
+		SDL_Quit();		
 		return -1;
 	} else {
-		cout << device_spec << endl;
-		cout << wav_spec << endl;
-		print_devices();
-
-		const int capture = 0;
-		SDL_PauseAudioDevice(dev, capture);
+		SDL_PauseAudioDevice(dev, 0);
 		SDL_Delay(50000);
 		SDL_CloseAudioDevice(dev);
 		return 0;
@@ -90,13 +69,7 @@ void audio_callback(void *userdata, Uint8 *stream, int len) {
 
 	if (b->length) {
 		const auto write_length = min(b->length, static_cast<Uint32>(len));
-		//SDL_memcpy (stream, b->position, write_length);
-		// mix from one buffer into another
-		SDL_memset(stream, rand(), len);
-		SDL_MixAudioFormat(
-			stream, b->position, AUDIO_S16LSB,
-		   	write_length, SDL_MIX_MAXVOLUME);
-		
+		SDL_memcpy (stream, b->position, write_length);
 		b->position += write_length;
 		b->length -= write_length;
 	}
