@@ -4,10 +4,13 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <mutex>
 
 using std::min;
 using std::max;
+using std::mutex;
 using std::runtime_error;
+using std::unique_lock;
 using std::unique_ptr;
 using std::copy;
 
@@ -48,6 +51,42 @@ bool RingBuffer::pop(uint8_t* const output, const size_t output_size) {
 	return true;
 }
 
+void RingBuffer::push_lock(const uint8_t* const input,
+                           const size_t input_size) {
+	unique_lock<mutex> lock(m_);
+
+	for (;;) {
+		if (input_size < space_left()) {
+			auto split = min(size_ - end_, input_size);	
+			copy(&input[0], &input[split], &buffer_[end_]);
+			copy(&input[split], &input[input_size], &buffer_[0]);
+
+			end_ = (end_ + input_size) % size_;
+			empty_.notify_one();
+			break;
+		} else {
+			full_.wait(lock);
+		}
+	}
+}
+
+void RingBuffer::pop_lock(uint8_t* const output, const size_t output_size) {
+	unique_lock<mutex> lock(m_);
+
+	for (;;) {
+		if (output_size <= space_used()) {
+			auto split = min(size_ - begin_, output_size);	
+			copy(&buffer_[begin_], &buffer_[begin_ + split], &output[0]);
+			copy(&buffer_[0], &buffer_[output_size - split], &output[split]);
+
+			begin_ = (begin_ + output_size) % size_;
+			full_.notify_one();
+			break;
+		} else {
+			empty_.wait(lock);
+		}
+	}
+}
 // This is a lower bound as begin_ may move
 size_t RingBuffer::space_left() const {
 	return (size_ + begin_ - end_) % size_;
