@@ -52,7 +52,17 @@ bool RingBuffer::pop(uint8_t* const output, const size_t output_size) {
 	return true;
 }
 
-void RingBuffer::push_lock(const uint8_t* const input,
+// This is a lower bound as begin_ may move
+size_t RingBuffer::space_left() const {
+	return size_ - space_used();
+}
+
+// This is a lower bound as end_ may move
+size_t RingBuffer::space_used() const {
+	return (size_ + end_ - begin_) % size_;
+}
+
+bool RingBufferLock::push(const uint8_t* const input,
                            const size_t input_size) {
 	unique_lock<mutex> lock(m_);
 
@@ -70,9 +80,10 @@ void RingBuffer::push_lock(const uint8_t* const input,
 			full_.wait(lock);
 		}
 	}
+	return true;
 }
 
-void RingBuffer::pop_lock(uint8_t* const output, const size_t output_size) {
+bool RingBufferLock::pop(uint8_t* const output, const size_t output_size) {
 	unique_lock<mutex> lock(m_);
 
 	for (;;) {
@@ -89,13 +100,5 @@ void RingBuffer::pop_lock(uint8_t* const output, const size_t output_size) {
 			empty_.wait(lock);
 		}
 	}
-}
-// This is a lower bound as begin_ may move
-size_t RingBuffer::space_left() const {
-	return size_ - space_used();
-}
-
-// This is a lower bound as end_ may move
-size_t RingBuffer::space_used() const {
-	return (size_ + end_ - begin_) % size_;
+	return true;
 }
