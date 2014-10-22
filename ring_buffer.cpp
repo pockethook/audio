@@ -1,5 +1,6 @@
 #include "ring_buffer.h"
 
+#include <iostream>
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
@@ -25,7 +26,7 @@ RingBuffer::RingBuffer(const size_t size) :
 // Return true if input has successfully been pushed into the buffer
 // Do not overwrite unused data
 bool RingBuffer::push(const uint8_t* const input, const size_t input_size) {
-	if (input_size > space_left()) {
+	if (input_size >= space_left()) {
 		return false;
 	}
 
@@ -57,6 +58,7 @@ void RingBuffer::push_lock(const uint8_t* const input,
 
 	for (;;) {
 		if (input_size < space_left()) {
+			std::cout << "push " << input_size << std::endl;
 			auto split = min(size_ - end_, input_size);	
 			copy(&input[0], &input[split], &buffer_[end_]);
 			copy(&input[split], &input[input_size], &buffer_[0]);
@@ -75,6 +77,7 @@ void RingBuffer::pop_lock(uint8_t* const output, const size_t output_size) {
 
 	for (;;) {
 		if (output_size <= space_used()) {
+			std::cout << "pop " << output_size << std::endl;
 			auto split = min(size_ - begin_, output_size);	
 			copy(&buffer_[begin_], &buffer_[begin_ + split], &output[0]);
 			copy(&buffer_[0], &buffer_[output_size - split], &output[split]);
@@ -89,7 +92,7 @@ void RingBuffer::pop_lock(uint8_t* const output, const size_t output_size) {
 }
 // This is a lower bound as begin_ may move
 size_t RingBuffer::space_left() const {
-	return (size_ + begin_ - end_) % size_;
+	return size_ - space_used();
 }
 
 // This is a lower bound as end_ may move
