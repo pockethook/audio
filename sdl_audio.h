@@ -6,9 +6,11 @@
 
 #include <memory>
 #include <stdexcept>
+#include <algorithm>
 
 using std::runtime_error;
 using std::unique_ptr;
+using std::fill;
 
 // Wrapper around SDL audio device handlers
 class SDLAudioDevice {
@@ -54,6 +56,7 @@ public:
 
 private:
 	static void audio_callback(void *userdata, Uint8 *stream, int len) {
+		fill(&stream[0], &stream[len], 0);
 		RingBuffer *ring = reinterpret_cast<RingBuffer*>(userdata);
 		ring->pop(stream, len);
 	}

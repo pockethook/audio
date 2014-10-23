@@ -1,3 +1,4 @@
+#include "decode_audio.h"
 #include "ring_buffer.h"
 #include "sdl_audio.h"
 
@@ -37,9 +38,10 @@ int main(const int argc, char** argv) {
 	const unsigned frequency{48000}; 
 
 	unique_ptr<RingBuffer> ring{new RingBufferLock{ring_buffer_size}};
-	
 	SDLAudio audio{frequency, ring.get()};
 	audio();
+	decode_audio(file_name, ring.get());
+
 	read_file(file_name, ring.get());
 
 	return 0;
