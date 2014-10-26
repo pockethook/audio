@@ -4,60 +4,50 @@
 
 #include <SDL2/SDL.h>
 
+#include <algorithm>
 #include <memory>
 #include <stdexcept>
-#include <algorithm>
+#include <unordered_map>
+#include <iostream>
 
-using std::runtime_error;
-using std::unique_ptr;
-using std::fill;
+const std::unordered_map<std::string, SDL_AudioFormat> formats {
+	{"u8", AUDIO_U8},
+	{"s16", AUDIO_S16},
+	{"s32", AUDIO_S32},
+	{"flt", AUDIO_F32},
+};
 
 // Wrapper around SDL audio device handlers
 class SDLAudioDevice {
 private:
+	SDL_AudioSpec spec_;
 	SDL_AudioDeviceID device_ {0};
 
 public:
-	SDLAudioDevice(SDL_AudioSpec* spec) :
-			device_{SDL_OpenAudioDevice(
-				nullptr, 0, spec, nullptr, SDL_AUDIO_ALLOW_ANY_CHANGE)} {
-		if (!device_) {
-			throw runtime_error("Could not open SDL audio device.");
-		}
-	}
-	~SDLAudioDevice() {
-		SDL_CloseAudioDevice(device_);
-	}
-	void operator()() {
-		SDL_PauseAudioDevice(device_, 0);
-	}
+	SDLAudioDevice(SDL_AudioSpec* spec);
+	~SDLAudioDevice();
+	void operator()();
+	SDL_AudioSpec spec() const;
 };
+
+std::ostream &operator<<(std::ostream &o, const SDLAudioDevice &device);
 
 class SDLAudio {
 private:
 	RingBuffer* ring_;
 	SDL_AudioSpec spec_;
-	unique_ptr<SDLAudioDevice> audio_;
+	std::unique_ptr<SDLAudioDevice> audio_;
 
 public:
-	SDLAudio(const unsigned frequency, RingBuffer* const ring) :
-			ring_{ring},
-			spec_{static_cast<int>(frequency), AUDIO_S16, 2, 0, 4096,
-				  0, 0, &audio_callback, ring_} {
-		if (SDL_Init(SDL_INIT_AUDIO)) {
-			SDL_Quit();		
-			throw runtime_error("Could not initialize SDL.");
-		}
-		audio_.reset(new SDLAudioDevice{&spec_});
-	}
-	void operator()() {
-		(*audio_)();
-	}
+	SDLAudio(const unsigned sample_rate, const std::string &format,
+	         const unsigned channels, const unsigned samples,
+	         RingBuffer* const ring); 
+	~SDLAudio();
+	void operator()();
+	SDLAudioDevice audio() const;
 
 private:
-	static void audio_callback(void *userdata, Uint8 *stream, int len) {
-		fill(&stream[0], &stream[len], 0);
-		RingBuffer *ring = reinterpret_cast<RingBuffer*>(userdata);
-		ring->pop(stream, len);
-	}
+	static void audio_callback(void *userdata, Uint8 *stream, int len);
 };
+
+std::ostream &operator<<(std::ostream &o, const SDLAudio &audio);

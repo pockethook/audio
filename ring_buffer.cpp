@@ -1,6 +1,5 @@
 #include "ring_buffer.h"
 
-#include <iostream>
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
@@ -68,7 +67,6 @@ bool RingBufferLock::push(const uint8_t* const input,
 
 	for (;;) {
 		if (input_size < space_left()) {
-			//std::cout << "push " << input_size << std::endl;
 			auto split = min(size_ - end_, input_size);	
 			copy(&input[0], &input[split], &buffer_[end_]);
 			copy(&input[split], &input[input_size], &buffer_[0]);
@@ -88,7 +86,6 @@ bool RingBufferLock::pop(uint8_t* const output, const size_t output_size) {
 
 	for (;;) {
 		if (output_size <= space_used()) {
-			//std::cout << "pop " << output_size << std::endl;
 			auto split = min(size_ - begin_, output_size);	
 			copy(&buffer_[begin_], &buffer_[begin_ + split], &output[0]);
 			copy(&buffer_[0], &buffer_[output_size - split], &output[split]);
