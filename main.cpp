@@ -1,6 +1,8 @@
 #include "decode_audio.h"
 #include "ring_buffer.h"
 #include "sdl_audio.h"
+#include "sfml_audio.h"
+#include "alsa_audio.h"
 
 #include <memory>
 #include <string>
@@ -27,7 +29,7 @@ int main(const int argc, char** argv) {
 		// Decode a frame to get information about output format
 		decode();
 
-		SDLAudio audio{decode.sample_rate(), decode.format(),
+		ALSAAudio audio{decode.sample_rate(), decode.format(),
 		               decode.channels(), decode.samples(), ring_buffer.get()};
 		audio();
 
