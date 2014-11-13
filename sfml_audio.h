@@ -1,35 +1,9 @@
 #pragma once
 
+#include "audio.h"
 #include "ring_buffer.h"
 
 #include <SFML/Audio.hpp>
-
-//#include <iomanip>
-//#include <iostream>
-//#include <vector>
-//#include <cmath>
-//
-//
-//int main() {
-//    sf::SoundBuffer buffer;
-//    //if (!buffer.loadFromFile("output.wav"))
-//    //    return 1;
-//	std::vector<sf::Int16> samples;
-//	for (unsigned i = 0; i < 123456789; ++i) {
-//		samples.push_back(2000 * rand());
-//	}
-//	std::cout << samples.size() << std::endl;
-//	buffer.loadFromSamples(&samples[0], samples.size(), 2, 48000);
-//    sf::Sound sound(buffer);
-//    sound.play();
-//    sf::sleep(sf::seconds(buffer.getDuration().asSeconds()));
-//}
-//
-//
-//#pragma once
-//
-//
-//#include <SDL2/SDL.h>
 
 #include <algorithm>
 #include <memory>
@@ -37,20 +11,16 @@
 #include <unordered_map>
 #include <iostream>
 
-//const std::unordered_map<std::string, int> formats {
-//	{"s16", 0},
-//};
-
-class SFMLAudio : public sf::SoundStream {
+class SFMLAudio : public sf::SoundStream , public Audio {
 private:
-	RingBuffer* ring_;
 	int16_t buffer[1048576];
 
 public:
 	SFMLAudio(const unsigned sample_rate, const std::string &format,
 	          const unsigned channels, const unsigned samples,
 	          RingBuffer* const ring); 
-	void operator()();
+	~SFMLAudio() override;
+	virtual void operator()() override;
 
 private:
 	virtual bool onGetData(Chunk &data) override {
@@ -66,3 +36,7 @@ private:
 		ring_->pop(reinterpret_cast<uint8_t*>(&buffer[0]), seek / 2);
 	}
 };
+
+Audio* make_sfml(const unsigned sample_rate, const std::string &format,
+                 const unsigned channels, const unsigned samples,
+                 RingBuffer* const ring);

@@ -66,7 +66,9 @@ bool RingBufferLock::push(const uint8_t* const input,
 	unique_lock<mutex> lock(m_);
 
 	for (;;) {
-		if (input_size < space_left()) {
+		if (finished_) {
+			return false;
+		} else if (input_size < space_left()) {
 			auto split = min(size_ - end_, input_size);	
 			copy(&input[0], &input[split], &buffer_[end_]);
 			copy(&input[split], &input[input_size], &buffer_[0]);
@@ -93,6 +95,8 @@ bool RingBufferLock::pop(uint8_t* const output, const size_t output_size) {
 			begin_ = (begin_ + output_size) % size_;
 			full_.notify_one();
 			break;
+		} else if (finished_) {
+			return false;
 		} else {
 			empty_.wait(lock);
 		}

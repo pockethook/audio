@@ -1,5 +1,6 @@
 #pragma once
 
+#include "audio.h"
 #include "ring_buffer.h"
 
 #include <alsa/asoundlib.h>
@@ -19,17 +20,8 @@ const std::unordered_map<std::string, snd_pcm_format_t> alsa_formats {
 	{"dbl", SND_PCM_FORMAT_FLOAT64},
 };
 
-const std::unordered_map<std::string, unsigned> format_sizes {
-	{"u8", sizeof(uint8_t)},
-	{"s16", sizeof(int16_t)},
-	{"s32", sizeof(int32_t)},
-	{"flt", sizeof(float)},
-	{"dbl", sizeof(double)},
-};
-
-class ALSAAudio {
+class ALSAAudio : public Audio {
 private:
-	RingBuffer* ring_;
 	snd_pcm_t *handle_;
 	snd_pcm_hw_params_t* hw_params_;
 	snd_pcm_sw_params_t* sw_params_;
@@ -41,11 +33,15 @@ private:
 
 public:
 	ALSAAudio(const unsigned sample_rate, const std::string &format,
-	         const unsigned channels, const unsigned samples,
-	         RingBuffer* const ring); 
-	~ALSAAudio();
-	void operator()();
+	          const unsigned channels, const unsigned samples,
+	          RingBuffer* const ring); 
+	virtual ~ALSAAudio() override;
+	virtual void operator()() override;
 
 private:
 	void run();
 };
+
+Audio* make_alsa(const unsigned sample_rate, const std::string &format,
+                 const unsigned channels, const unsigned samples,
+                 RingBuffer* const ring);

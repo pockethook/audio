@@ -42,7 +42,7 @@ std::ostream &operator<<(std::ostream &o, const SDLAudioDevice &device) {
 SDLAudio::SDLAudio(const unsigned sample_rate, const std::string &format,
 		 const unsigned channels, const unsigned samples,
 		 RingBuffer* const ring) :
-		ring_{ring},
+		Audio{ring},
 		spec_{static_cast<int>(sample_rate), formats.at(format),
 			  static_cast<Uint8>(channels), 0,
 			  static_cast<Uint16>(samples),
@@ -74,4 +74,10 @@ void SDLAudio::audio_callback(void *userdata, Uint8 *stream, int len) {
 std::ostream &operator<<(std::ostream &o, const SDLAudio &audio) {
 	o << audio.audio() << std::endl;
 	return o;
+}
+
+Audio* make_sdl(const unsigned sample_rate, const std::string &format,
+                 const unsigned channels, const unsigned samples,
+                 RingBuffer* const ring) {
+	return new SDLAudio{sample_rate, format, channels, samples, ring};
 }

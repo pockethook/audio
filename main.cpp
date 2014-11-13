@@ -1,8 +1,6 @@
 #include "decode_audio.h"
 #include "ring_buffer.h"
-#include "sdl_audio.h"
-#include "sfml_audio.h"
-#include "alsa_audio.h"
+#include "audio_factory.h"
 
 #include <memory>
 #include <string>
@@ -17,7 +15,7 @@ int main(const int argc, char** argv) {
 
 	try {
 		if (argc < 2) {
-			cerr << "Usage: player file_name" << endl;
+			cerr << "Usage: player file_name [backend]" << endl;
 			return -1;
 		}
 
@@ -27,11 +25,13 @@ int main(const int argc, char** argv) {
 		const string file_name{argv[1]};
 		DecodeAudio decode(file_name, ring_buffer.get());
 		// Decode a frame to get information about output format
-		decode();
+		//decode();
 
-		ALSAAudio audio{decode.sample_rate(), decode.format(),
-		               decode.channels(), decode.samples(), ring_buffer.get()};
-		audio();
+		string backend = argc > 2  ? argv[2] : "alsa";
+		unique_ptr<Audio> audio{make_audio(
+			backend, decode.sample_rate(), decode.format(),
+			decode.channels(), decode.samples(), ring_buffer.get())};
+		(*audio)();
 
 		while (decode()) {
 		}

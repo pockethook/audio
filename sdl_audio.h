@@ -1,5 +1,6 @@
 #pragma once
 
+#include "audio.h"
 #include "ring_buffer.h"
 
 #include <SDL2/SDL.h>
@@ -32,9 +33,8 @@ public:
 
 std::ostream &operator<<(std::ostream &o, const SDLAudioDevice &device);
 
-class SDLAudio {
+class SDLAudio : public Audio {
 private:
-	RingBuffer* ring_;
 	SDL_AudioSpec spec_;
 	std::unique_ptr<SDLAudioDevice> audio_;
 
@@ -42,8 +42,8 @@ public:
 	SDLAudio(const unsigned sample_rate, const std::string &format,
 	         const unsigned channels, const unsigned samples,
 	         RingBuffer* const ring); 
-	~SDLAudio();
-	void operator()();
+	virtual ~SDLAudio() override;
+	virtual void operator()() override;
 	SDLAudioDevice audio() const;
 
 private:
@@ -51,3 +51,7 @@ private:
 };
 
 std::ostream &operator<<(std::ostream &o, const SDLAudio &audio);
+
+Audio* make_sdl(const unsigned sample_rate, const std::string &format,
+                const unsigned channels, const unsigned samples,
+                RingBuffer* const ring);

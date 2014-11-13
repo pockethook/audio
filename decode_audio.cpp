@@ -49,32 +49,43 @@ DecodeAudio::DecodeAudio(const string &file_name, RingBuffer* ring) :
 }
 
 unsigned DecodeAudio::sample_rate() const {
-	return frame_->sample_rate;
+	return decoder_context_->sample_rate;
+	//return frame_->sample_rate;
 }
 
 string DecodeAudio::format() const {
 	auto packed = av_get_packed_sample_fmt(
-		static_cast<AVSampleFormat>(frame_->format));
+		static_cast<AVSampleFormat>(decoder_context_->sample_fmt));
 	auto format = av_get_sample_fmt_name(packed);
 	return format ? format : string{};
+	//auto packed = av_get_packed_sample_fmt(
+	//	static_cast<AVSampleFormat>(frame_->format));
+	//auto format = av_get_sample_fmt_name(packed);
+	//return format ? format : string{};
 }
 
 unsigned DecodeAudio::channels() const {
-	return frame_->channels;
+	return decoder_context_->channels;
+	//return frame_->channels;
 }
 
 unsigned DecodeAudio::samples() const {
-	return frame_->nb_samples;
+	return 8192;
+	//return frame_->nb_samples;
 }
 
 bool DecodeAudio::is_planar() const {
 	return av_sample_fmt_is_planar(
-		static_cast<AVSampleFormat>(frame_->format));
+		static_cast<AVSampleFormat>(decoder_context_->sample_fmt));
+	//return av_sample_fmt_is_planar(
+	//	static_cast<AVSampleFormat>(frame_->format));
 }
 
 unsigned DecodeAudio::bytes() const {
 	return av_get_bytes_per_sample(
-		static_cast<AVSampleFormat>(frame_->format));
+		static_cast<AVSampleFormat>(decoder_context_->sample_fmt));
+	//return av_get_bytes_per_sample(
+	//	static_cast<AVSampleFormat>(frame_->format));
 }
 
 // Return true if a whole frame has been successfully decoded and pushed
@@ -83,6 +94,7 @@ unsigned DecodeAudio::bytes() const {
 bool DecodeAudio::operator()() {
 	for (;;) {
 		if (!next_audio_packet()) {
+			ring_->finished();
 			return false;
 		}
 
